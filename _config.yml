@@ -1,0 +1,8 @@
+name: DIEDAY
+description: 我的个人博客
+url: https://mrquj.github.io
+baseurl: ""
+permalink: /blog/:title
+paginate: 5
+markdown: kramdown
+highlighter: rouge
