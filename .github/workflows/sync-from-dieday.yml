@@ -1,0 +1,47 @@
+name: Sync content from dieday.github.io
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    if: github.event.head_commit.message != 'Auto-sync content from dieday.github.io'
+    steps:
+      - name: Checkout Mrquj.github.io
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clone dieday.github.io
+        run: git clone --depth 1 https://github.com/Mrquj/dieday.github.io.git old-repo
+
+      - name: Copy posts and assets
+        run: |
+          # Ensure directories exist
+          mkdir -p _posts assets/img note
+          # Copy posts
+          cp -r old-repo/_posts/* _posts/ || true
+          # Fix front matter typo in posts
+          find _posts -name "*.md" -exec sed -i 's/^lay out: post$/layout: post/' {} \;
+          # Copy image assets (favicon, QR code, etc.)
+          if [ -d old-repo/assets/img ]; then
+            cp -r old-repo/assets/img/* assets/img/ || true
+          fi
+          # Copy any remaining note files
+          if [ -d old-repo/note ]; then
+            cp -r old-repo/note/* note/ || true
+          fi
+
+      - name: Commit and push synced content
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add _posts assets/img note
+          if git diff --staged --quiet; then
+            echo "No changes to sync"
+            exit 0
+          fi
+          git commit -m "Auto-sync content from dieday.github.io"
+          git push
